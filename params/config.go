@@ -183,6 +183,24 @@ var (
 			ProtectorReward:      50.27, // 45.243 goes to node, 5.02 goes to foundation
 			ObserverReward:       25.13, // 22.671 goes to node, 2.51 goes to foundation
 		},
+		//1482707
+		1487700: {
+			SwitchRound:               1487700,
+			CertThreshold:             0.667,
+			TimeoutSyncThreshold:      3,
+			TimeoutPeriod:             5,
+			MinePeriod:                2,
+			ExpTimeoutConfig:          ExpTimeoutConfig{Base: 2.0, MaxExponent: 5},
+			MaxMasternodes:            12,
+			MaxProtectorNodes:         2,
+			MaxObverserNodes:          2,
+			MasternodeReward:          63.42, // 57.078 goes to node, 6.34 goes to foundation
+			ProtectorReward:           50.27, // 45.243 goes to node, 5.02 goes to foundation
+			ObserverReward:            25.13, // 22.671 goes to node, 2.51 goes to foundation
+			LimitPenaltyEpoch:         3,
+			MinimumSigningTx:          1,
+			MinimumMinerBlockPerEpoch: 1,
+		},
 	}
 
 	UnitTestV2Configs = map[uint64]*V2Config{
