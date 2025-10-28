@@ -174,6 +174,7 @@ func (x *XDPoS_v2) IsEpochSwitch(header *types.Header) (bool, uint64, error) {
 	log.Trace("[IsEpochSwitch]", "is", parentRound < epochStartRound, "parentRound", parentRound, "round", round, "number", header.Number.Uint64(), "epochNum", epochNum, "hash", header.Hash().Hex())
 	// if isEpochSwitch, add to cache
 	if parentRound < epochStartRound {
+		log.Debug("[IsEpochSwitch]", "is", parentRound < epochStartRound, "parentRound", parentRound, "round", round, "number", header.Number.Uint64(), "epochNum", epochNum, "hash", header.Hash().Hex())
 		x.round2epochBlockInfo.Add(round, &types.BlockInfo{
 			Hash:   header.Hash(),
 			Number: header.Number,
