@@ -405,9 +405,19 @@ func (hc *HeaderChain) HasHeader(hash common.Hash, number uint64) bool {
 func (hc *HeaderChain) GetHeaderByNumber(number uint64) *types.Header {
 	hash := rawdb.ReadCanonicalHash(hc.chainDb, number)
 	if hash == (common.Hash{}) {
+		log.Trace("GetHeaderByNumber: canonical hash not found",
+			"requestedNumber", number,
+			"currentHead", hc.CurrentHeader().Number)
 		return nil
 	}
-	return hc.GetHeader(hash, number)
+	header := hc.GetHeader(hash, number)
+	if header == nil {
+		log.Warn("GetHeaderByNumber: header not found despite having canonical hash",
+			"requestedNumber", number,
+			"hash", hash,
+			"currentHead", hc.CurrentHeader().Number)
+	}
+	return header
 }
 
 func (hc *HeaderChain) GetCanonicalHash(number uint64) common.Hash {

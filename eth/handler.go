@@ -436,6 +436,18 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		}
 		hashMode := query.Origin.Hash != (common.Hash{})
 
+		// LOG: Received header request
+		currentHead := pm.blockchain.CurrentBlock().Number()
+		log.Debug("Received GetBlockHeaders request",
+			"peer", p.id,
+			"hashMode", hashMode,
+			"originNumber", query.Origin.Number,
+			"originHash", query.Origin.Hash,
+			"amount", query.Amount,
+			"skip", query.Skip,
+			"reverse", query.Reverse,
+			"currentHead", currentHead)
+
 		// Gather headers until the fetch or network limits is reached
 		var (
 			bytes   common.StorageSize
@@ -447,8 +459,22 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			var origin *types.Header
 			if hashMode {
 				origin = pm.blockchain.GetHeaderByHash(query.Origin.Hash)
+				if origin == nil {
+					log.Debug("GetHeaderByHash returned nil",
+						"peer", p.id,
+						"hash", query.Origin.Hash,
+						"headersCollected", len(headers))
+				}
 			} else {
 				origin = pm.blockchain.GetHeaderByNumber(query.Origin.Number)
+				if origin == nil {
+					log.Debug("GetHeaderByNumber returned nil",
+						"peer", p.id,
+						"requestedNumber", query.Origin.Number,
+						"currentHead", currentHead,
+						"headersCollected", len(headers),
+						"blockExists", pm.blockchain.HasBlock(common.Hash{}, query.Origin.Number))
+				}
 			}
 			if origin == nil {
 				break
@@ -504,6 +530,24 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 				query.Origin.Number += query.Skip + 1
 			}
 		}
+
+		// LOG: Sending response
+		log.Debug("Sending BlockHeaders response",
+			"peer", p.id,
+			"headersCount", len(headers),
+			"unknown", unknown,
+			"bytesCollected", bytes,
+			"requestedAmount", query.Amount)
+
+		if len(headers) == 0 {
+			log.Warn("Sending EMPTY headers response",
+				"peer", p.id,
+				"requestedNumber", query.Origin.Number,
+				"requestedAmount", query.Amount,
+				"currentHead", currentHead,
+				"unknown", unknown)
+		}
+
 		return p.SendBlockHeaders(headers)
 
 	case msg.Code == BlockHeadersMsg:

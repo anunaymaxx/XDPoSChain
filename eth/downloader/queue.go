@@ -695,13 +695,27 @@ func (q *queue) DeliverHeaders(id string, headers []*types.Header, headerProcCh 
 	// Short circuit if the data was never requested
 	request := q.headerPendPool[id]
 	if request == nil {
+		log.Debug("DeliverHeaders: no pending request found", "peer", id)
 		return 0, errNoFetchesPending
 	}
 	headerReqTimer.UpdateSince(request.Time)
 	delete(q.headerPendPool, id)
 
+	// LOG: Received headers delivery
+	log.Debug("DeliverHeaders: received delivery",
+		"peer", id,
+		"from", request.From,
+		"headersReceived", len(headers),
+		"expectedMax", MaxHeaderFetch)
+
 	// Ensure headers can be mapped onto the skeleton chain
 	target := q.headerTaskPool[request.From].Hash()
+
+	log.Debug("DeliverHeaders: checking skeleton",
+		"peer", id,
+		"from", request.From,
+		"targetHash", target,
+		"headersReceived", len(headers))
 
 	accepted := len(headers) == MaxHeaderFetch
 	if accepted {
@@ -730,7 +744,27 @@ func (q *queue) DeliverHeaders(id string, headers []*types.Header, headerProcCh 
 	}
 	// If the batch of headers wasn't accepted, mark as unavailable
 	if !accepted {
-		log.Trace("Skeleton filling not accepted", "peer", id, "from", request.From, "len", len(headers), "max", MaxHeaderFetch)
+		// Enhanced logging to understand WHY it was rejected
+		reason := "unknown"
+		if len(headers) != MaxHeaderFetch {
+			reason = fmt.Sprintf("wrong length (got %d, expected %d)", len(headers), MaxHeaderFetch)
+		} else if len(headers) > 0 {
+			if headers[0].Number.Uint64() != request.From {
+				reason = fmt.Sprintf("first header mismatch (got %d, expected %d)", headers[0].Number.Uint64(), request.From)
+			} else if headers[len(headers)-1].Hash() != target {
+				reason = fmt.Sprintf("last header hash mismatch (got %s, expected %s)", headers[len(headers)-1].Hash().Hex(), target.Hex())
+			} else {
+				reason = "chain ordering or ancestry broken"
+			}
+		}
+
+		log.Warn("Skeleton filling not accepted",
+			"peer", id,
+			"from", request.From,
+			"len", len(headers),
+			"max", MaxHeaderFetch,
+			"reason", reason,
+			"targetHash", target)
 
 		miss := q.headerPeerMiss[id]
 		if miss == nil {
