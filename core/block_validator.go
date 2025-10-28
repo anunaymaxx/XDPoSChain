@@ -32,6 +32,16 @@ import (
 	"github.com/XinFinOrg/XDPoSChain/trie"
 )
 
+// getSender safely extracts the sender address from a transaction
+func getSender(tx *types.Transaction) string {
+	signer := types.NewEIP155Signer(tx.ChainId())
+	from, err := types.Sender(signer, tx)
+	if err != nil {
+		return fmt.Sprintf("error: %v", err)
+	}
+	return from.Hex()
+}
+
 // BlockValidator is responsible for validating block headers, uncles and
 // processed state.
 //
@@ -103,6 +113,70 @@ func (v *BlockValidator) ValidateState(block *types.Block, statedb *state.StateD
 	// Validate the state root against the received state root and throw
 	// an error if they don't match.
 	if root := statedb.IntermediateRoot(v.config.IsEIP158(header.Number)); header.Root != root {
+		// Get parent block for comparison
+		parentBlock := v.bc.GetBlock(header.ParentHash, header.Number.Uint64()-1)
+		parentStateRoot := common.Hash{}
+		if parentBlock != nil {
+			parentStateRoot = parentBlock.Root()
+		}
+
+		// Enhanced logging for merkle root mismatch
+		log.Error("Merkle root mismatch - detailed analysis",
+			"blockNumber", header.Number,
+			"blockHash", block.Hash(),
+			"remoteRoot", header.Root,
+			"localRoot", root,
+			"parentStateRoot", parentStateRoot,
+			"numTxs", len(block.Transactions()),
+			"gasUsed", block.GasUsed(),
+			"numReceipts", len(receipts),
+			"parentHash", header.ParentHash,
+			"coinbase", header.Coinbase,
+			"difficulty", header.Difficulty,
+			"isEIP158", v.config.IsEIP158(header.Number))
+
+		// Log transaction details
+		for i, tx := range block.Transactions() {
+			log.Error("Transaction in block",
+				"txIndex", i,
+				"txHash", tx.Hash(),
+				"from", getSender(tx),
+				"to", tx.To(),
+				"value", tx.Value(),
+				"gas", tx.Gas(),
+				"gasPrice", tx.GasPrice(),
+				"nonce", tx.Nonce(),
+				"data_len", len(tx.Data()))
+		}
+
+		// Log receipt details
+		for i, receipt := range receipts {
+			log.Error("Receipt in block",
+				"receiptIndex", i,
+				"txHash", receipt.TxHash,
+				"status", receipt.Status,
+				"gasUsed", receipt.GasUsed,
+				"cumulativeGasUsed", receipt.CumulativeGasUsed,
+				"numLogs", len(receipt.Logs),
+				"contractAddress", receipt.ContractAddress)
+
+			// Log each event log
+			for j, evtLog := range receipt.Logs {
+				log.Error("Event log",
+					"txIndex", i,
+					"logIndex", j,
+					"address", evtLog.Address,
+					"topics", len(evtLog.Topics),
+					"data_len", len(evtLog.Data))
+			}
+		}
+
+		// Log state changes for debugging
+		log.Error("State diff summary",
+			"blockNumber", header.Number,
+			"coinbaseBalance", statedb.GetBalance(header.Coinbase),
+			"coinbaseNonce", statedb.GetNonce(header.Coinbase))
+
 		return fmt.Errorf("invalid merkle root (remote: %x local: %x)", header.Root, root)
 	}
 	return nil
