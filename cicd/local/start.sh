@@ -45,12 +45,12 @@ echo "Starting nodes with $bootnodes ..."
 # https://github.com/XinFinOrg/XDPoSChain/issues/268
 
 XDC --ethstats ${netstats} \
+--networkid 5551 \
 --gcmode archive \
 --bootnodes ${bootnodes} \
 --syncmode full \
 --datadir /work/xdcchain \
---networkid 551 \
--port $port \
+--port $port \
 --rpc --rpccorsdomain "*" \
 --rpcaddr 0.0.0.0 \
 --rpcport $rpc_port \

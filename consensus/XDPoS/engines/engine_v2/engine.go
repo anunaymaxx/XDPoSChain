@@ -338,9 +338,11 @@ func (x *XDPoS_v2) Prepare(chain consensus.ChainReader, header *types.Header) er
 		return consensus.ErrUnknownAncestor
 	}
 	// Ensure gas settings are bounded
-	if err := misc.VerifyGaslimit(parent.GasLimit, header.GasLimit); err != nil {
+	err = misc.VerifyGaslimit(parent.GasLimit, header.GasLimit)
+	if err != nil && parent.Number.Uint64() != 0 { // skip genesis block
 		return err
-	}
+	}	
+
 	if header.GasUsed > header.GasLimit {
 		return fmt.Errorf("gas used exceeded gaslimit, gas used: %d, gas limit: %d", header.GasUsed, header.GasLimit)
 	}
@@ -429,7 +431,8 @@ func (x *XDPoS_v2) Finalize(chain consensus.ChainReader, header *types.Header, s
 		return nil, consensus.ErrUnknownAncestor
 	}
 	// Ensure gas settings are bounded
-	if err := misc.VerifyGaslimit(parentHeader.GasLimit, header.GasLimit); err != nil {
+	err = misc.VerifyGaslimit(parentHeader.GasLimit, header.GasLimit)
+	if err != nil && parentHeader.Number.Uint64() != 0 { // skip genesis block
 		return nil, err
 	}
 	if header.GasUsed > header.GasLimit {
