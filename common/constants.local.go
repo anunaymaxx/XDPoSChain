@@ -26,8 +26,8 @@ var localConstant = constant{
 	TIPV2SwitchBlock:       big.NewInt(0),
 	tipXDCXMinerDisable:    big.NewInt(0),
 	tipXDCXReceiverDisable: big.NewInt(0),
-	eip1559Block:           big.NewInt(9999999),
-	cancunBlock:            big.NewInt(9999999),
+	eip1559Block:           big.NewInt(250000),
+	cancunBlock:            big.NewInt(250000),
 
 	trc21IssuerSMC:         HexToAddress("0x8c0faeb5C6bEd2129b8674F262Fd45c4e9468bee"),
 	xdcxListingSMC:         HexToAddress("0xDE34dD0f536170993E8CFF639DdFfCF1A85D3E53"),
