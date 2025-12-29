@@ -35,7 +35,8 @@ rpc_port="${RPC_PORT:-8545}"
 
 ws_port="${WS_PORT:-8555}"
 
-netstats="${NODE_NAME}-${wallet}:xinfin_xdpos_hybrid_network_stats@devnetstats.apothem.network:2000"
+default_netstats="xinfin_xdpos_hybrid_network_stats_local@localhost:2000"
+netstats="${NODE_NAME}-${wallet}:${NETSTATS_CONFIG:-$default_netstats}"
 
 
 echo "Running a node with wallet: ${wallet}"
